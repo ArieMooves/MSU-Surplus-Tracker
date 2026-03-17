@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+app = FastAPI(title="MSU Surplus Tracker API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -9,7 +11,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app = FastAPI(title="MSU Surplus Tracker API")
 
 # temporary storage
 assets = []
