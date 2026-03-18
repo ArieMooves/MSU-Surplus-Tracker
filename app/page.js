@@ -5,27 +5,37 @@ import Layout from "../components/Layout"
 import Link from "next/link"
 
 export default function Home() {
-  // State to store assets from backend
+  //  State to store assets from backend
   const [assets, setAssets] = useState([])
 
-  // Loading state for better UX
+  //  Loading state (true initially until data is fetched)
   const [loading, setLoading] = useState(true)
 
-  // Runs once when component loads
+  //  Optional: error state for robustness (good for grad-level work)
+  const [error, setError] = useState(null)
+
+  //  Runs once when component loads
   useEffect(() => {
     loadAssets()
   }, [])
 
-  // Fetch assets from FastAPI backend
+  //  Fetch assets from FastAPI backend
   async function loadAssets() {
-    const data = await getAssets()
-    setAssets(data)
-    setLoading(false) // stop loading once data is fetched
+    try {
+      const data = await getAssets()
+      setAssets(data)
+    } catch (err) {
+      // Handle API failure
+      setError("Failed to load assets. Please try again.")
+    } finally {
+      // Always stop loading (success OR failure)
+      setLoading(false)
+    }
   }
 
   return (
     <Layout>
-      {/* Header Section */}
+      {/*  Header Section */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
@@ -36,7 +46,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Navigation to Add Asset Page */}
+        {/*  Navigation to Add Asset Page */}
         <Link
           href="/add"
           className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition"
@@ -45,33 +55,42 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* Loading State */}
+      {/*  CONDITIONAL RENDERING SECTION */}
+      {/* This is where loading, error, empty, and data states are handled */}
+
       {loading ? (
+        //  1. Loading State (while waiting for backend)
         <p className="text-gray-500">Loading assets...</p>
+
+      ) : error ? (
+        //  2. Error State (if API fails)
+        <p className="text-red-500">{error}</p>
+
       ) : assets.length === 0 ? (
-        /* Empty State */
+        //  3. Empty State (no data exists)
         <p className="text-gray-500 text-center mt-10">
           No assets yet. Click "Add Asset" to get started.
         </p>
+
       ) : (
-        /* Asset Grid */
+        //  4. Data Display (normal case)
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {assets.map((asset) => (
             <div
               key={asset.id}
               className="bg-white shadow-md rounded-xl p-5 hover:shadow-xl transition border"
             >
-              {/* Asset Name */}
+              {/*  Asset Name */}
               <h3 className="text-lg font-semibold text-gray-800">
                 {asset.item_name}
               </h3>
 
-              {/* Condition */}
+              {/*  Condition */}
               <p className="text-sm text-gray-500 mt-1">
                 Condition: {asset.condition}
               </p>
 
-              {/* Status Badge (color changes based on value) */}
+              {/* Status Badge (color-coded for UX clarity) */}
               <p
                 className={`mt-3 inline-block px-3 py-1 text-sm rounded-full ${
                   asset.current_status === "disposed"
