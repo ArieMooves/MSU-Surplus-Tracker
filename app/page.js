@@ -8,10 +8,10 @@ export default function Home() {
   //  State to store assets from backend
   const [assets, setAssets] = useState([])
 
-  //  Loading state (true initially until data is fetched)
+  //  Loading state 
   const [loading, setLoading] = useState(true)
 
-  //  Optional: error state for robustness (good for grad-level work)
+  //  Optional: error state for robustness 
   const [error, setError] = useState(null)
 
   //  Runs once when component loads
@@ -28,7 +28,7 @@ export default function Home() {
       // Handle API failure
       setError("Failed to load assets. Please try again.")
     } finally {
-      // Always stop loading (success OR failure)
+      // Always stop loading 
       setLoading(false)
     }
   }
