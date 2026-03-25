@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from ai.claude_service import generate_asset_description
 
 app = FastAPI(title="MSU Surplus Tracker API")
 
@@ -87,3 +88,13 @@ def add_scan_event(scan_event: ScanEvent):
 @app.get("/scan-events")
 def get_scan_events():
     return scan_events
+
+# AI feature for dsecriptive item state logging
+@app.post("/generate-description")
+def generate_description(asset: dict):
+    description = generate_asset_description(
+        asset.get("item_name"),
+        asset.get("condition"),
+        asset.get("current_status")
+    )
+    return {"description": description}
