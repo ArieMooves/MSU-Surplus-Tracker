@@ -1,183 +1,315 @@
-# Import core tools from FastAPI and other libraries
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from anthropic import Anthropic
+from datetime import datetime
 import os
-import json
 
-# Initialize Anthropic client (used for AI description generation)
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+from pydantic import BaseModel
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
-# Create FastAPI app instance
+from database import Base, engine, get_db
+
+# Models (SQLAlchemy)
+from models import (
+    Asset as AssetModel,
+    AssetAuditEvent as AssetAuditEventModel,
+    Department as DepartmentModel,
+    DisposalRecord as DisposalRecordModel,
+    ScanEvent as ScanEventModel,
+    User as UserModel,
+)
+
+
+Base.metadata.create_all(bind=engine)
+
+
 app = FastAPI(title="MSU Surplus Tracker API")
 
-# Enable CORS so Next.js frontend can talk to backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # frontend URL
+    allow_origins=["http://localhost:3000"],  # your Next.js frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# This data is used only if no JSON file exists yet
-assets = [
-    {
-        "id": 1,
-        "asset_tag": "A001",
-        "item_name": "Desk Chair",
-        "condition": "Good",
-        "current_status": "Available"
-    },
-    {
-        "id": 2,
-        "asset_tag": "A002",
-        "item_name": "Projector",
-        "condition": "Fair",
-        "current_status": "In Use"
-    }
-]
 
-# Scan events start empty
-scan_events = []
+USER_API_KEY = os.getenv("USER_API_KEY")
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 
-# Defines the structure of incoming data
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-class Asset(BaseModel):
+
+def require_user_api_key(api_key: str | None = Depends(api_key_header)) -> str:
+    if not api_key:
+        raise HTTPException(401, "Missing API key")
+    if ADMIN_API_KEY and api_key == ADMIN_API_KEY:
+        return "admin"
+    if USER_API_KEY and api_key == USER_API_KEY:
+        return "user"
+    raise HTTPException(401, "Invalid API key")
+
+
+def require_admin_api_key(role: str = Depends(require_user_api_key)) -> str:
+    if role != "admin":
+        raise HTTPException(403, "Admin access required")
+    return role
+
+
+
+class AssetCreate(BaseModel):
     id: int
     asset_tag: str
     item_name: str
-    condition: str
+    description: str | None = None
+    condition: str | None = None
     current_status: str
+    location: str | None = None
+    department_id: int | None = None
+    submitted_by: int | None = None
+
+
+class AssetOut(BaseModel):
+    asset_id: int
+    asset_tag: str | None = None
+    item_name: str
+    description: str | None = None
+    condition: str | None = None
+    current_status: str
+    location: str | None = None
+    department_id: int | None = None
+    submitted_by: int | None = None
+    created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
 
 class StatusUpdate(BaseModel):
     current_status: str
+    updated_by: int | None = None
 
-class ScanEvent(BaseModel):
+
+class ScanEventCreate(BaseModel):
     asset_id: int
     scan_location: str
+    scanned_by: int | None = None
 
-# Save/load assets to JSON so data persists after restart
 
-def save_assets():
-    with open("assets.json", "w") as f:
-        json.dump(assets, f)
+class ScanEventOut(BaseModel):
+    scan_id: int
+    asset_id: int | None = None
+    scanned_by: int | None = None
+    scan_time: datetime | None = None
+    scan_location: str | None = None
 
-def load_assets():
-    global assets
-    try:
-        with open("assets.json", "r") as f:
-            assets = json.load(f)
-    except:
-        pass  # If file doesn't exist, keep default data
+    class Config:
+        from_attributes = True
 
-# Save/load scan events
 
-def save_scan_events():
-    with open("scan_events.json", "w") as f:
-        json.dump(scan_events, f)
+class DepartmentCreate(BaseModel):
+    department_name: str
 
-def load_scan_events():
-    global scan_events
-    try:
-        with open("scan_events.json", "r") as f:
-            scan_events = json.load(f)
-    except:
-        scan_events = []
 
-# Load saved data on startup
-load_assets()
-load_scan_events()
+class DepartmentOut(BaseModel):
+    department_id: int
+    department_name: str
 
-# Root route (test if API is running)
+    class Config:
+        from_attributes = True
+
+
+class UserCreate(BaseModel):
+    full_name: str
+    email: str
+    role: str
+    department_id: int | None = None
+
+
+class UserOut(BaseModel):
+    user_id: int
+    full_name: str
+    email: str
+    role: str
+    department_id: int | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class DisposalRecordCreate(BaseModel):
+    asset_id: int
+    recommended_action: str | None = None
+    final_action: str | None = None
+    approved_by: int | None = None
+    notes: str | None = None
+
+
+class DisposalRecordOut(BaseModel):
+    record_id: int
+    asset_id: int | None = None
+    recommended_action: str | None = None
+    final_action: str | None = None
+    approved_by: int | None = None
+    notes: str | None = None
+    updated_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class AssetAuditEventOut(BaseModel):
+    audit_id: int
+    asset_id: int | None = None
+    event_type: str
+    field_name: str | None = None
+    old_value: str | None = None
+    new_value: str | None = None
+    changed_by: int | None = None
+    changed_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+
 @app.get("/")
 def root():
     return {"message": "MSU Surplus Tracker API running"}
 
-# Get all assets
-@app.get("/assets")
-def get_assets():
-    return assets
-
-# Add a new asset
-@app.post("/assets")
-def add_asset(asset: Asset):
-    # Prevent duplicate IDs or asset tags
-    for existing_asset in assets:
-        if existing_asset["id"] == asset.id:
-            return {"error": "Asset with this ID already exists"}
-        if existing_asset["asset_tag"] == asset.asset_tag:
-            return {"error": "Asset with this barcode/asset tag already exists"}
-
-    # Add asset and save
-    assets.append(asset.dict())
-    save_assets()
-
-    return {"message": "Asset added successfully", "asset": asset.dict()}
-
-# Get a single asset by ID
-@app.get("/assets/{asset_id}")
-def get_asset(asset_id: int):
-    for asset in assets:
-        if asset["id"] == asset_id:
-            return asset
-    return {"error": "Asset not found"}
-
-# Update asset status
-@app.put("/assets/{asset_id}/status")
-def update_asset_status(asset_id: int, status_update: StatusUpdate):
-    for asset in assets:
-        if asset["id"] == asset_id:
-            asset["current_status"] = status_update.current_status
-            save_assets()  # persist change
-            return {"message": "Asset status updated", "asset": asset}
-    return {"error": "Asset not found"}
-
-# Lookup asset by barcode / tag
-@app.get("/assets/by-tag/{asset_tag}")
-def get_asset_by_tag(asset_tag: str):
-    for asset in assets:
-        if asset["asset_tag"] == asset_tag:
-            return asset
-    return {"error": "Asset not found"}
 
 
-# Log a scan event
-@app.post("/scan-events")
-def add_scan_event(scan_event: ScanEvent):
-    scan_record = {
-        "asset_id": scan_event.asset_id,
-        "scan_location": scan_event.scan_location,
-    }
+@app.get("/assets", response_model=list[AssetOut])
+def get_assets(db: Session = Depends(get_db)):
+    return db.query(AssetModel).all()
 
-    scan_events.append(scan_record)
-    save_scan_events()  # persist scan
 
-    return {"message": "Scan event logged successfully", "scan_event": scan_record}
+@app.post("/assets", response_model=AssetOut)
+def add_asset(asset: AssetCreate, db: Session = Depends(get_db)):
+    existing = db.query(AssetModel).filter(
+        or_(
+            AssetModel.asset_id == asset.id,
+            AssetModel.asset_tag == asset.asset_tag
+        )
+    ).all()
 
-# Get all scan events
-@app.get("/scan-events")
-def get_scan_events():
-    return scan_events
+    for row in existing:
+        if row.asset_id == asset.id:
+            raise HTTPException(409, "Asset with this ID already exists")
+        if row.asset_tag == asset.asset_tag:
+            raise HTTPException(409, "Asset with this barcode already exists")
 
-# Generate a description for an asset using AI
-@app.post("/generate-description")
-def generate_description(asset: dict):
-    prompt = f"""
-    Write a short, professional description for a surplus inventory system.
-
-    Item: {asset.get("item_name")}
-    Condition: {asset.get("condition")}
-    Status: {asset.get("current_status")}
-    """
-
-    response = client.messages.create(
-        model="claude-3-haiku-20240307",
-        max_tokens=100,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+    new_asset = AssetModel(
+        asset_id=asset.id,
+        asset_tag=asset.asset_tag,
+        item_name=asset.item_name,
+        description=asset.description,
+        condition=asset.condition,
+        current_status=asset.current_status,
+        location=asset.location,
+        department_id=asset.department_id,
+        submitted_by=asset.submitted_by,
     )
 
-    return {"description": response.content[0].text}
+    db.add(new_asset)
+    db.commit()
+    db.refresh(new_asset)
+    return new_asset
+
+
+@app.get("/assets/{asset_id}", response_model=AssetOut)
+def get_asset(asset_id: int, db: Session = Depends(get_db)):
+    asset = db.get(AssetModel, asset_id)
+    if not asset:
+        raise HTTPException(404, "Asset not found")
+    return asset
+
+
+@app.put("/assets/{asset_id}/status", response_model=AssetOut)
+def update_status(asset_id: int, status_update: StatusUpdate, db: Session = Depends(get_db)):
+    asset = db.get(AssetModel, asset_id)
+    if not asset:
+        raise HTTPException(404, "Asset not found")
+
+    asset.current_status = status_update.current_status
+    db.commit()
+    db.refresh(asset)
+    return asset
+
+
+@app.get("/assets/by-tag/{asset_tag}", response_model=AssetOut)
+def get_by_tag(asset_tag: str, db: Session = Depends(get_db)):
+    asset = db.query(AssetModel).filter(AssetModel.asset_tag == asset_tag).first()
+    if not asset:
+        raise HTTPException(404, "Asset not found")
+    return asset
+
+
+@app.post("/scan-events", response_model=ScanEventOut)
+def create_scan(scan: ScanEventCreate, db: Session = Depends(get_db)):
+    event = ScanEventModel(**scan.dict())
+    db.add(event)
+    db.commit()
+    db.refresh(event)
+    return event
+
+
+@app.get("/scan-events", response_model=list[ScanEventOut])
+def get_scans(db: Session = Depends(get_db)):
+    return db.query(ScanEventModel).all()
+
+
+
+@app.get("/departments", response_model=list[DepartmentOut])
+def get_departments(db: Session = Depends(get_db)):
+    return db.query(DepartmentModel).all()
+
+
+@app.post("/departments", response_model=DepartmentOut)
+def create_department(dept: DepartmentCreate, db: Session = Depends(get_db)):
+    new_dept = DepartmentModel(**dept.dict())
+    db.add(new_dept)
+    db.commit()
+    db.refresh(new_dept)
+    return new_dept
+
+
+
+@app.get("/users", response_model=list[UserOut])
+def get_users(db: Session = Depends(get_db)):
+    return db.query(UserModel).all()
+
+
+@app.post("/users", response_model=UserOut)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    new_user = UserModel(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+
+@app.get("/disposal-records", response_model=list[DisposalRecordOut])
+def get_disposals(db: Session = Depends(get_db)):
+    return db.query(DisposalRecordModel).all()
+
+
+@app.post("/disposal-records", response_model=DisposalRecordOut)
+def create_disposal(record: DisposalRecordCreate, db: Session = Depends(get_db)):
+    new_record = DisposalRecordModel(**record.dict())
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+    return new_record
+
+
+
+@app.get("/assets/{asset_id}/audit-events", response_model=list[AssetAuditEventOut])
+def get_audit(asset_id: int, db: Session = Depends(get_db)):
+    return (
+        db.query(AssetAuditEventModel)
+        .filter(AssetAuditEventModel.asset_id == asset_id)
+        .all()
+    )
