@@ -9,6 +9,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db
+import models
 
 # Models (SQLAlchemy)
 from models import (
