@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-/* You can add custom MSU styles directly here later */
 @theme {
-  --color-msu-green: #18453b;
+  /* Maroon and Gold brand colors */
+  --color-brand-maroon: #800000;
+  --color-brand-gold: #FFD700;
+  --color-brand-dark: #4a0000;
+  --color-background: #f5f5f4; 
 }
