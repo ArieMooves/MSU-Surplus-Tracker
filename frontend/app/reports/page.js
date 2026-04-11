@@ -9,7 +9,7 @@ export default function ReportsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-maroon uppercase tracking-tight">
           Surplus Reports
-        </div>
+        </h1> 
         <p className="text-slate-500">Generate and view asset analytics.</p>
       </div>
 
