@@ -27,10 +27,10 @@ export default function Login() {
           
           <div className="relative py-4">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200"></span></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">Official Access</span></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">MSU Admin Login</span></div>
           </div>
 
-          <input type="username" placeholder="email" className="w-full p-3 border rounded-lg bg-slate-50 outline-none" disabled />
+          <input type="email" placeholder="MSU Email Address" className="w-full p-3 border rounded-lg bg-slate-50 outline-none" disabled />
           <button className="w-full border-2 border-slate-200 text-slate-400 font-bold py-3 rounded-lg cursor-not-allowed">
             Sign in with Mustangs ID
           </button>
