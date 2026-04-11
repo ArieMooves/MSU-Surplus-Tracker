@@ -2,7 +2,7 @@ import psycopg2
 from faker import Faker
 import random
 
-# Database connection details (matching your psql setup)
+# Database connection details 
 DB_PARAMS = {
     "dbname": "postgres",
     "user": "postgres",
