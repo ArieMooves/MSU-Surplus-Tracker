@@ -1,4 +1,6 @@
 "use client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   LayoutDashboard, 
@@ -11,6 +13,22 @@ import {
 } from 'lucide-react';
 
 export default function Layout({ children }) {
+  const router = useRouter();
+
+  // Auth Guard: Redirect to login if no user session found
+  useEffect(() => {
+    const user = localStorage.getItem('msu_user');
+    if (!user) {
+      router.push('/login'); 
+    }
+  }, [router]);
+
+  // Logout Logic
+  const handleLogout = () => {
+    localStorage.removeItem('msu_user');
+    router.push('/login');
+  };
+
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: <LayoutDashboard size={20}/> },
     { name: 'Inventory', href: '/inventory', icon: <ClipboardList size={20}/> },
@@ -21,7 +39,7 @@ export default function Layout({ children }) {
   ];
 
   return (
-    <div className="flex h-screen bg-stone-50"> {/* Warmer background for professional look */}
+    <div className="flex h-screen bg-stone-50">
       {/* SIDEBAR - Branded Maroon */}
       <aside className="w-64 bg-brand-maroon text-white flex flex-col shadow-2xl">
         <div className="p-6 text-brand-gold text-2xl font-black border-b border-brand-dark italic tracking-tighter">
@@ -46,7 +64,7 @@ export default function Layout({ children }) {
         {/* BOTTOM SECTION */}
         <div className="p-4 border-t border-brand-dark space-y-2">
           <button 
-            onClick={() => console.log("Logging out...")}
+            onClick={handleLogout} // Updated: Now calls our actual logout logic
             className="flex items-center gap-3 px-3 py-2 w-full text-left rounded-lg hover:bg-black/20 hover:text-brand-gold transition-all text-sm font-medium"
           >
             <LogOut size={18} />
@@ -60,7 +78,7 @@ export default function Layout({ children }) {
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* TOP HEADER - White with Gold Border Accent */}
+        {/* TOP HEADER */}
         <header className="h-16 bg-white border-b-4 border-brand-gold flex items-center px-8 justify-between shadow-sm">
           <h2 className="font-bold text-brand-maroon uppercase tracking-tight">System Overview</h2>
           <div className="flex items-center gap-4">
