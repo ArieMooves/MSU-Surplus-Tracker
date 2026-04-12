@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react'; 
 import { useRouter, usePathname } from 'next/navigation'; 
 import Link from 'next/link';
 import { 
@@ -14,12 +14,20 @@ import {
 
 export default function Layout({ children }) {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current URL path
+  const pathname = usePathname();
+  
+  
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const user = localStorage.getItem('msu_user');
+    
     if (!user) {
+      // No user found, kick to login
       router.push('/login'); 
+    } else {
+      
+      setIsCheckingAuth(false);
     }
   }, [router]);
 
@@ -37,8 +45,23 @@ export default function Layout({ children }) {
     { name: 'Settings', href: '/settings', icon: <Settings size={20}/> },
   ];
 
+  
+  if (isCheckingAuth) {
+    return (
+      <div className="h-screen w-full bg-brand-maroon flex flex-col items-center justify-center">
+        <div className="text-brand-gold text-4xl font-black italic mb-4 animate-pulse">
+          MSU SURPLUS
+        </div>
+        <div className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">
+          Verifying Credentials...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-stone-50">
+      {/* SIDEBAR */}
       <aside className="w-64 bg-brand-maroon text-white flex flex-col shadow-2xl">
         <div className="p-6 text-brand-gold text-2xl font-black border-b border-brand-dark italic tracking-tighter">
           MSU SURPLUS
@@ -46,7 +69,6 @@ export default function Layout({ children }) {
         
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {menuItems.map((item) => {
-            // Check if this item is the one we are currently viewing
             const isActive = pathname === item.href;
 
             return (
@@ -55,8 +77,8 @@ export default function Layout({ children }) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all group ${
                   isActive 
-                    ? 'bg-brand-dark text-brand-gold shadow-inner' // Active Styles
-                    : 'hover:bg-brand-dark hover:text-brand-gold'   // Inactive Styles
+                    ? 'bg-brand-dark text-brand-gold shadow-inner' 
+                    : 'hover:bg-brand-dark hover:text-brand-gold'
                 }`}
               >
                 <span className={`${
@@ -68,7 +90,6 @@ export default function Layout({ children }) {
                   {item.name}
                 </span>
                 
-                {/* Visual Indicator: A small gold dot for the active tab */}
                 {isActive && (
                   <div className="ml-auto w-1.5 h-1.5 bg-brand-gold rounded-full shadow-[0_0_8px_rgba(214,172,80,0.8)]" />
                 )}
@@ -91,10 +112,10 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 bg-white border-b-4 border-brand-gold flex items-center px-8 justify-between shadow-sm">
           <h2 className="font-bold text-brand-maroon uppercase tracking-tight">
-            {/* Dynamic Header Title based on path */}
             {menuItems.find(i => i.href === pathname)?.name || "System Overview"}
           </h2>
           <div className="flex items-center gap-4">
