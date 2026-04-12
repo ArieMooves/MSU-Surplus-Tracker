@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'; 
 import { useRouter, usePathname } from 'next/navigation'; 
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -15,18 +16,13 @@ import {
 export default function Layout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
     const user = localStorage.getItem('msu_user');
-    
     if (!user) {
-      // No user found, kick to login
       router.push('/login'); 
     } else {
-      
       setIsCheckingAuth(false);
     }
   }, [router]);
@@ -45,32 +41,17 @@ export default function Layout({ children }) {
     { name: 'Settings', href: '/settings', icon: <Settings size={20}/> },
   ];
 
-  
-  if (isCheckingAuth) {
-    return (
-      <div className="h-screen w-full bg-brand-maroon flex flex-col items-center justify-center">
-        <div className="text-brand-gold text-4xl font-black italic mb-4 animate-pulse">
-          MSU SURPLUS
-        </div>
-        <div className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">
-          Verifying Credentials...
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-screen bg-stone-50">
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-brand-maroon text-white flex flex-col shadow-2xl">
+    <div className="flex h-screen w-full bg-background overflow-hidden">
+      {/* SIDEBAR - Stays fixed and rendered regardless of auth/page state to prevent flickers */}
+      <aside className="w-64 bg-brand-maroon text-white flex flex-col shadow-2xl z-20">
         <div className="p-6 text-brand-gold text-2xl font-black border-b border-brand-dark italic tracking-tighter">
-          MSU SURPLUS
+          MSU SURPLUS Tracker
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
-
             return (
               <Link 
                 key={item.name} 
@@ -83,15 +64,17 @@ export default function Layout({ children }) {
               >
                 <span className={`${
                   isActive ? 'text-brand-gold' : 'text-brand-gold/60 group-hover:text-brand-gold'
-                } transition-colors`}>
+                }`}>
                   {item.icon}
                 </span>
                 <span className={`font-semibold ${isActive ? 'text-white' : ''}`}>
                   {item.name}
                 </span>
-                
                 {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 bg-brand-gold rounded-full shadow-[0_0_8px_rgba(214,172,80,0.8)]" />
+                  <motion.div 
+                    layoutId="activeIndicator"
+                    className="ml-auto w-1.5 h-1.5 bg-brand-gold rounded-full shadow-[0_0_8px_rgba(214,172,80,0.8)]" 
+                  />
                 )}
               </Link>
             );
@@ -107,14 +90,14 @@ export default function Layout({ children }) {
             Logout
           </button>
           <div className="px-3 py-1 text-[10px] uppercase tracking-widest text-brand-gold/50 font-bold">
-            Logged in as Admin
+            Admin Portal
           </div>
         </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b-4 border-brand-gold flex items-center px-8 justify-between shadow-sm">
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <header className="h-16 bg-white border-b-4 border-brand-gold flex items-center px-8 justify-between shadow-sm z-10">
           <h2 className="font-bold text-brand-maroon uppercase tracking-tight">
             {menuItems.find(i => i.href === pathname)?.name || "System Overview"}
           </h2>
@@ -125,10 +108,35 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-8">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <main className="flex-1 overflow-auto relative">
+          <AnimatePresence mode="wait">
+            {isCheckingAuth ? (
+              <motion.div 
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full w-full flex flex-col items-center justify-center bg-background"
+              >
+                <div className="text-brand-maroon/20 text-4xl font-black italic mb-2 animate-pulse uppercase">
+                  MSU
+                </div>
+                <div className="text-brand-maroon/40 text-[10px] uppercase tracking-[0.3em] font-bold">
+                  Verifying...
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={pathname} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="p-8 max-w-7xl mx-auto"
+              >
+                {children}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>
