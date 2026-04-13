@@ -1,29 +1,27 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from 'next/server';
-// import { pool } from '@/lib/db'; 
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function GET(request, { params }) {
   const { id } = params;
+  
+  //  Get raw name from your DB 
+  const rawAssetName = "Dell Monitor - Black"; 
 
-  try {
-    // Fetch asset details from PostgreSQL DB
-    
-    // Mock Data for logic demonstration
-    const assetName = "Dell Monitor - Black"; 
+  // Use Gemini Flash-Lite 
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const searchQuery = assetName.replace(" - Black", ""); 
+  const prompt = `You are a surplus asset specialist. Convert this inventory name into a clean manufacturer model name for price matching on eBay: "${rawAssetName}". Return ONLY the model name.`;
 
-    // 3. Fetch from External Market 
-    const marketResults = [
-      { site: 'eBay', price: 45.00, condition: 'Used', link: '#' },
-      { site: 'Amazon', price: 89.99, condition: 'Renewed', link: '#' }
-    ];
+  const result = await model.generateContent(prompt);
+  const cleanName = result.response.text().trim();
 
-    return NextResponse.json({ 
-      assetName, 
-      searchQuery, 
-      listings: marketResults 
-    });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 });
-  }
+  return NextResponse.json({ 
+    original: rawAssetName,
+    searchQuery: cleanName,
+    listings: [
+        { site: 'eBay', price: 42.50, link: '#' } // Placeholder for actual fetch logic
+    ]
+  });
 }
