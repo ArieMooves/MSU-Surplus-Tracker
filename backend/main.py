@@ -131,23 +131,25 @@ class AssetAuditEventOut(BaseModel):
 def root():
     return {"message": "MSU Surplus Tracker API running"}
 
-# NEW: AI Description Generation Endpoint
 @app.post("/generate-description")
 async def generate_description(req: AIDescriptionRequest):
-    
-    if not os.getenv("GEMINI_API_KEY"):
-        raise HTTPException(status_code=500, detail="Gemini API Key not configured on server")
+    if not os.getenv("GEMINI_KEY"):
+        raise HTTPException(status_code=500, detail="Gemini API Key not configured")
     
     try:
-        prompt = f"You are an expert MSU Surplus Property Manager. Describe a {req.item_name} in {req.condition} condition for an official inventory record in one professional sentence."
+        prompt = (
+            f"You are a professional MSU Surplus Property Clerk. "
+            f"The user provided these notes about an item: '{req.item_name}'. "
+            f"The item is in {req.condition} condition. "
+            f"Task: Rewrite the user's notes into a concise, professional 1-sentence inventory description. "
+            f"Focus strictly on the condition and any issues mentioned. Do not invent details not provided by the user."
+        )
         
         response = model.generate_content(prompt)
-        
         return {"description": response.text.strip()}
         
     except Exception as e:
-        print(f"Gemini Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate AI description")
+        raise HTTPException(status_code=500, detail="Failed to paraphrase description")
 
 @app.get("/assets", response_model=list[AssetOut])
 def get_assets(db: Session = Depends(get_db)):
