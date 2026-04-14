@@ -8,6 +8,7 @@ import {
   ClipboardList, 
   ScanBarcode, 
   BarChart3, 
+  ShoppingCart,
   Settings, 
   LogOut,
   PlusCircle
