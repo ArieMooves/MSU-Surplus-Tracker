@@ -16,30 +16,36 @@ export default function AssetForm() {
   });
 
   const handleGenerateDescription = async () => {
-    if (!formData.item_name) {
-      alert("Please enter an Item Name first!");
-      return;
+  if (!formData.item_name) {
+    alert("Please enter an Item Name first!");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const response = await fetch(`${baseUrl}/generate-description`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        item_name: formData.item_name, 
+        condition: formData.condition 
+      }),
+    });
+    
+    if (!response.ok) throw new Error('Backend not responding');
+
+    const data = await response.json();
+    if (data.description) {
+      setFormData({ ...formData, description: data.description });
     }
-    setLoading(true);
-    try {
-      const response = await fetch('http://localhost:8000/generate-description', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          item_name: formData.item_name, 
-          condition: formData.condition 
-        }),
-      });
-      const data = await response.json();
-      if (data.description) {
-        setFormData({ ...formData, description: data.description });
-      }
-    } catch (error) {
-      alert("AI Error: Check if backend is running on port 8000");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    alert(`AI Error: Ensure your backend is running at ${process.env.NEXT_PUBLIC_API_URL}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
