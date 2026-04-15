@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
     };
     
     const asset = itemNames[id] || { name: "Generic Electronic Item", cond: "Good" };
-
+    const rawAssetName = asset.name;
     
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
