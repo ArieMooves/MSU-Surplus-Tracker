@@ -37,6 +37,7 @@ conditions = ["New", "Good", "Fair", "Poor"]
 statuses = ["active", "surplus", "disposed"]
 
 def seed_data():
+    conn = None
     try:
         conn = psycopg2.connect(**DB_PARAMS)
         cur = conn.cursor()
@@ -77,7 +78,7 @@ def seed_data():
     except Exception as e:
         print(f"Error seeding database: {e}")
     finally:
-        if conn:
+        if conn is not None:
             cur.close()
             conn.close()
 
