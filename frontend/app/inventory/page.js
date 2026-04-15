@@ -1,16 +1,16 @@
 "use client";
+
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Layout from "../../components/Layout";
 import BackButton from "../../components/BackButton";
 import { getAssets, updateAssetStatus } from "../../lib/api"; 
-import { Search, X, Edit3, Save } from 'lucide-react';
+import { Search, X, Edit3, Save, BarChart2 } from 'lucide-react';
 
 export default function InventoryPage() {
   const [assets, setAssets] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  
-  
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -52,6 +52,8 @@ export default function InventoryPage() {
   return (
     <Layout>
       <BackButton />
+      
+      {/* Header & Search Section */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-brand-maroon uppercase tracking-tight">Asset Inventory</h1>
@@ -69,6 +71,7 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {/* Inventory Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50 border-b border-slate-200">
@@ -85,7 +88,7 @@ export default function InventoryPage() {
             ) : filteredAssets.map((asset) => (
               <tr 
                 key={asset.asset_id} 
-                onClick={() => setSelectedAsset(asset)} // Open modal on click
+                onClick={() => setSelectedAsset(asset)}
                 className="hover:bg-brand-gold/5 transition-colors group cursor-pointer"
               >
                 <td className="p-4 font-mono text-sm text-brand-maroon font-bold">{asset.asset_tag}</td>
@@ -157,21 +160,33 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-              <button 
-                onClick={handleSaveStatus}
-                disabled={isSaving}
-                className="flex-1 bg-brand-maroon text-white font-bold py-4 rounded-xl hover:bg-brand-dark transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+            {/* MODAL FOOTER WITH MARKET LINK */}
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+              {/* Dynamic Market Analysis Link */}
+              <Link 
+                href={`/market/${selectedAsset.asset_id || selectedAsset.id}`}
+                className="w-full bg-brand-gold text-brand-maroon font-black py-4 rounded-xl hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-md uppercase tracking-widest text-xs"
               >
-                <Save size={18} />
-                {isSaving ? "SAVING..." : "UPDATE ASSET"}
-              </button>
-              <button 
-                onClick={() => setSelectedAsset(null)}
-                className="flex-1 border-2 border-slate-200 text-slate-500 font-bold py-4 rounded-xl hover:bg-slate-100 transition-all"
-              >
-                CANCEL
-              </button>
+                <BarChart2 size={18} />
+                View Market Analysis
+              </Link>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleSaveStatus}
+                  disabled={isSaving}
+                  className="flex-1 bg-brand-maroon text-white font-bold py-4 rounded-xl hover:bg-brand-dark transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+                >
+                  <Save size={18} />
+                  {isSaving ? "SAVING..." : "UPDATE ASSET"}
+                </button>
+                <button 
+                  onClick={() => setSelectedAsset(null)}
+                  className="flex-1 border-2 border-slate-200 text-slate-500 font-bold py-4 rounded-xl hover:bg-slate-100 transition-all"
+                >
+                  CANCEL
+                </button>
+              </div>
             </div>
           </div>
         </div>
