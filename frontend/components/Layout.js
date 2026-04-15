@@ -39,7 +39,7 @@ export default function Layout({ children }) {
     { name: 'Add Asset', href: '/add', icon: <PlusCircle size={20}/> },
     { name: 'Scanner', href: '/scanner', icon: <ScanBarcode size={20}/> },
     { name: 'Reports', href: '/reports', icon: <BarChart3 size={20}/> },
-    { name: 'Market', href: '/market/1', icon: <ShoppingCart size={20}/> },
+    { name: 'Market', href: '/market', icon: <ShoppingCart size={20}/> },
     { name: 'Settings', href: '/settings', icon: <Settings size={20}/> },
   ];
 
