@@ -18,6 +18,20 @@ export default function Layout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentTime, setCurrentTime] = useState("");
+
+  // Update dynamic date/time
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }));
+    };
+    updateTime();
+  }, []);
 
   useEffect(() => {
     const user = localStorage.getItem('msu_user');
@@ -45,7 +59,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
-      {/* SIDEBAR - Stays fixed and rendered regardless of auth/page state to prevent flickers */}
+      {/* SIDEBAR */}
       <aside className="w-64 bg-brand-maroon text-white flex flex-col shadow-2xl z-20">
         <div className="p-6 text-brand-gold text-2xl font-black border-b border-brand-dark italic tracking-tighter">
           MSU SURPLUS Tracker
@@ -104,8 +118,8 @@ export default function Layout({ children }) {
             {menuItems.find(i => i.href === pathname)?.name || "System Overview"}
           </h2>
           <div className="flex items-center gap-4">
-             <span className="text-xs font-bold text-brand-maroon bg-brand-gold/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                April 2026
+             <span className="text-xs font-bold text-brand-maroon bg-brand-gold/20 px-4 py-1.5 rounded-full uppercase tracking-widest">
+                {currentTime || "Loading Date..."}
              </span>
           </div>
         </header>
